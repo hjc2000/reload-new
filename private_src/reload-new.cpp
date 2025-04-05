@@ -151,13 +151,20 @@ extern "C"
 		{
 			bsp::di::task::TaskGuard g{};
 			auto it = _size_map.find(ptr);
-			if (it != _size_map.end())
+			if (it == _size_map.end())
 			{
-				old_size = it->second;
+				// 传入了非空指针，但是原来没有分配过这段内存。
+				return nullptr;
 			}
+
+			old_size = it->second;
 		}
 
 		void *new_mem = malloc(new_size);
+		if (new_mem == nullptr)
+		{
+			return nullptr;
+		}
 
 		std::copy(reinterpret_cast<uint8_t *>(old_mem),
 				  reinterpret_cast<uint8_t *>(old_mem) + std::min(old_size, new_size),
