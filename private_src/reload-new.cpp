@@ -173,4 +173,17 @@ extern "C"
 		free(old_mem);
 		return new_mem;
 	}
+
+	///
+	/// @brief 使用自定义堆管理之后，禁止使用本函数。
+	///
+	/// @param r
+	/// @param incr
+	/// @return void*
+	///
+	void *_sbrk_r(struct _reent *r, ptrdiff_t incr)
+	{
+		errno = ENOMEM;
+		return (void *)-1;
+	}
 }
