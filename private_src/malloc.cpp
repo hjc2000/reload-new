@@ -1,27 +1,24 @@
+#include "base/bit/bit_converte.h"
+#include "base/stream/ReadOnlySpan.h"
+#include "base/stream/Span.h"
 #include "bsp-interface/di/heap.h"
-#include "bsp-interface/di/task.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <map>
-
-namespace
-{
-	std::map<void *, size_t> _size_map{};
-}
 
 extern "C"
 {
 	void *malloc(size_t size)
 	{
-		bsp::di::task::TaskGuard g{};
-		void *ret = bsp::di::heap::Malloc(size);
-		if (ret != nullptr)
-		{
-			_size_map[ret] = size;
-		}
+		void *mem = bsp::di::heap::Malloc(size + sizeof(size_t));
 
-		return ret;
+		base::Span span{
+			reinterpret_cast<uint8_t *>(mem),
+			sizeof(size_t),
+		};
+
+		base::bit_converte::GetBytes(size, span);
+		return reinterpret_cast<uint8_t *>(mem) + sizeof(size_t);
 	}
 
 	void free(void *ptr)
@@ -31,9 +28,7 @@ extern "C"
 			return;
 		}
 
-		bsp::di::task::TaskGuard g{};
-		bsp::di::heap::Free(ptr);
-		_size_map.erase(ptr);
+		bsp::di::heap::Free(reinterpret_cast<uint8_t *>(ptr) - sizeof(size_t));
 	}
 
 	void *realloc(void *ptr, size_t new_size)
@@ -52,19 +47,13 @@ extern "C"
 		}
 
 		void *old_mem = ptr;
-		size_t old_size = 0;
 
-		{
-			bsp::di::task::TaskGuard g{};
-			auto it = _size_map.find(ptr);
-			if (it == _size_map.end())
-			{
-				// 传入了非空指针，但是原来没有分配过这段内存。
-				return nullptr;
-			}
+		base::ReadOnlySpan span{
+			reinterpret_cast<uint8_t *>(old_mem) - sizeof(size_t),
+			sizeof(size_t),
+		};
 
-			old_size = it->second;
-		}
+		size_t old_size = base::bit_converte::FromBytes<size_t>(span);
 
 		void *new_mem = malloc(new_size);
 		if (new_mem == nullptr)
