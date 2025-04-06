@@ -1,4 +1,5 @@
 #include "base/bit/bit_converte.h"
+#include "base/Guard.h"
 #include "base/stream/ReadOnlySpan.h"
 #include "base/stream/Span.h"
 #include "bsp-interface/di/heap.h"
@@ -48,6 +49,12 @@ extern "C"
 
 		void *old_mem = ptr;
 
+		base::Guard g{
+			[old_mem]()
+			{
+				free(old_mem);
+			}};
+
 		base::ReadOnlySpan span{
 			reinterpret_cast<uint8_t *>(old_mem) - sizeof(size_t),
 			sizeof(size_t),
@@ -65,7 +72,6 @@ extern "C"
 				  reinterpret_cast<uint8_t *>(old_mem) + std::min(old_size, new_size),
 				  reinterpret_cast<uint8_t *>(new_mem));
 
-		free(old_mem);
 		return new_mem;
 	}
 
