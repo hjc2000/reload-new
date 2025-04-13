@@ -11,15 +11,15 @@ extern "C"
 {
 	void *malloc(size_t size)
 	{
-		void *mem = bsp::di::heap::Malloc(size + sizeof(size_t));
+		void *mem = bsp::di::heap::Malloc(size + sizeof(uint64_t));
 
 		base::Span span{
 			reinterpret_cast<uint8_t *>(mem),
-			sizeof(size_t),
+			sizeof(uint64_t),
 		};
 
 		base::bit_converte::GetBytes(size, span);
-		return reinterpret_cast<uint8_t *>(mem) + sizeof(size_t);
+		return reinterpret_cast<uint8_t *>(mem) + sizeof(uint64_t);
 	}
 
 	void free(void *ptr)
@@ -29,7 +29,7 @@ extern "C"
 			return;
 		}
 
-		bsp::di::heap::Free(reinterpret_cast<uint8_t *>(ptr) - sizeof(size_t));
+		bsp::di::heap::Free(reinterpret_cast<uint8_t *>(ptr) - sizeof(uint64_t));
 	}
 
 	void *realloc(void *ptr, size_t new_size)
@@ -56,11 +56,11 @@ extern "C"
 			}};
 
 		base::ReadOnlySpan span{
-			reinterpret_cast<uint8_t *>(old_mem) - sizeof(size_t),
-			sizeof(size_t),
+			reinterpret_cast<uint8_t *>(old_mem) - sizeof(uint64_t),
+			sizeof(uint64_t),
 		};
 
-		size_t old_size = base::bit_converte::FromBytes<size_t>(span);
+		uint64_t old_size = base::bit_converte::FromBytes<uint64_t>(span);
 
 		void *new_mem = malloc(new_size);
 		if (new_mem == nullptr)
@@ -69,7 +69,7 @@ extern "C"
 		}
 
 		std::copy(reinterpret_cast<uint8_t *>(old_mem),
-				  reinterpret_cast<uint8_t *>(old_mem) + std::min(old_size, new_size),
+				  reinterpret_cast<uint8_t *>(old_mem) + std::min<size_t>(old_size, new_size),
 				  reinterpret_cast<uint8_t *>(new_mem));
 
 		return new_mem;
