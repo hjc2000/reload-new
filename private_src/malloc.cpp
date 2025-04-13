@@ -18,7 +18,7 @@ extern "C"
 			sizeof(uint64_t),
 		};
 
-		base::bit_converte::GetBytes(size, span);
+		base::bit_converte::GetBytes(static_cast<uint64_t>(size), span);
 		return reinterpret_cast<uint8_t *>(mem) + sizeof(uint64_t);
 	}
 
